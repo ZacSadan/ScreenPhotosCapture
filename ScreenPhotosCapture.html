@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+  <head>	
+	<style>
+		#bannerDiv { margin: 0px;  height: 5%; color:#d13e56;  background: #92b0d2;  position:absolute;  top:0px;  right:0px;  bottom:0px;   left:0px; text-align:center ; font-family:monospace ; font-size: 30px ; }
+		
+		#mainImgDiv {margin: 0px;  height: 95%;   background: white;  position:absolute;  top:5%;  right:0px;  bottom:0px;   left:0px;} 
+		
+		#mainImg {height: 99%;width: 100%} 
+		
+		#video { 	position: fixed;    bottom: 0;    right: 0; }
+	</style>
+
+    <script src="https://cdn.jsdelivr.net/gh/JayPuff/browser-file-storage/dist/browser-file-storage.min.js" ></script>
+	
+	<script>
+		var g_status = "";
+		var g_last_blob ;
+
+		function returnCurDateStr()
+		{
+			const today = new Date();
+			return "" +
+			today.getFullYear() +
+			('0' + (today.getMonth()+1)).slice(-2) +
+			('0' + (today.getDate())).slice(-2) +
+			"_" +
+			('0' + (today.getHours())).slice(-2) +
+			('0' + (today.getMinutes())).slice(-2) +
+			"_" +
+			('0' + (today.getSeconds())).slice(-2) ;
+		}
+		function setStatusText(str,addition)
+		{
+			if ( addition )
+				document.getElementById("bannerText").innerHTML = 
+					document.getElementById("bannerText").innerHTML + str;
+			else
+				document.getElementById("bannerText").innerHTML = str;			
+		}
+		function readImagesFromIndexDbIntoImgsBank()
+		{			
+			imgsBankDiv = document.getElementById("imgsBankDiv");
+			while (imgsBankDiv.firstChild) 
+			{
+				imgsBankDiv.removeChild(imgsBankDiv.firstChild); 
+			}
+			
+			browserFileStorage.loadAll().then((files) => 
+			{
+				for(let f in files) 
+				{					
+					div = document.createElement("div");
+					img = document.createElement("IMG");
+					img.src = files[f].createURL();
+					divInfo = document.createElement("div");
+					d = new Date(files[f].lastModified); 
+					divInfo.innerHTML = files[f].filename + ",Date:" + 
+										d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate()+" "+
+										d.getHours()+":"+d.getMinutes()+":"+d.getSeconds() + " "+ 
+										"<a href='#' onclick='browserFileStorage.delete(\""+ files[f].filename + "\");"+
+										"this.parentElement.parentElement.style.display = \"none\"; return false;" +
+										"'; >delete file</a><p><p>";			
+					div.appendChild(img);
+					div.appendChild(divInfo);
+					imgsBankDiv.appendChild(div);
+				}
+				divInfo = document.createElement("div");				
+				divInfo.innerHTML = "<p><a href='#' onclick='toggleImgsBank(); return false;'; >BACK</a>";				
+				imgsBankDiv.appendChild(divInfo);
+				
+			}).catch((error) => {console.error(error)});
+		}
+		function toggleImgsBank()
+		{
+			mainImgDiv = document.getElementById("mainImgDiv");
+			imgsBankDiv = document.getElementById("imgsBankDiv");
+			if (mainImgDiv.style.display == "")
+			{
+				mainImgDiv.style.display = "none";			
+				imgsBankDiv.style.display = "";
+			}
+			else
+			{
+				mainImgDiv.style.display = "";			
+				imgsBankDiv.style.display = "none";
+			}
+		}
+		function rotateImagesOnScreen(index)
+		{
+			index = parseInt(index);			
+			try
+			{
+				imgsBankDiv = document.getElementById("imgsBankDiv");
+				mainImg_div = document.getElementById("mainImg");
+				
+				if (g_status == "" )
+					mainImg_div.src = imgsBankDiv.children[index].children[0].src;
+				
+				if ( imgsBankDiv.children.length == index + 2 )
+					index = 0;
+				else
+					index++;
+			}
+			catch(error) {}
+			setTimeout("rotateImagesOnScreen("+index+");", 2000);
+		}
+	</script>
+  </head>
+  <body onload="rotateImagesOnScreen(0);">
+    
+	<div id="bannerDiv" onclick="toggleImgsBank()" >
+		<b id="bannerText"></b>	
+	</div>
+	<div id="mainImgDiv" >
+		<img id="mainImg"> </img>	
+	</div>
+	<div id="imgsBankDiv" style="display:none">	
+	</div>
+	<canvas class=""></canvas>
+	<video id="video" ></video> 
+    <script src="https://cdn.jsdelivr.net/npm/handtrackjs@latest/dist/handtrack.min.js"></script>
+
+	<script>
+		
+		browserFileStorage.init('ScreenPhotos').then((status) => 
+		{
+			readImagesFromIndexDbIntoImgsBank();			
+		}).catch((error) => {if(!error.supported) {}if(error.alreadyInit) {} if(error.dbError) {console.error(error.error)}});
+
+		var video = document.getElementById('video');		
+		video.setAttribute('playsinline', '');
+		video.setAttribute('autoplay', '');
+		video.setAttribute('muted', '');
+		video.style.width = '200px';
+		video.style.height = '200px';
+		
+		var facingMode = "user"; 
+		var constraints = {
+		  audio: false,
+		  video: {
+		   facingMode: facingMode
+		  }
+		};		
+		navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+		  video.srcObject = stream;
+		});
+		const modelParams = {
+			flipHorizontal: false,
+			outputStride: 16,
+			imageScaleFactor: 1,
+			maxNumBoxes: 20,
+			iouThreshold: 0.2,
+			scoreThreshold: 0.6,
+			modelType: "ssd320fpnlite",
+			modelSize: "small",
+			bboxLineWidth: "2",
+			fontSize: 17,
+		};		
+		const canvas = document.querySelector("canvas");
+		const context = canvas.getContext("2d");
+		let model;
+		handTrack.startVideo(video).then((status) => 
+		{
+		  if (status) 
+		  {
+			navigator.getUserMedia(
+			  { video: {} },
+			  (stream) => {
+				video.srcObject = stream;
+				setInterval(runDetection, 1000);
+			  },
+			  (err) => console.log(err)
+			);
+		  }
+		});
+		function runDetection() 
+		{			
+		  if ( typeof model === "undefined" )
+			return;
+
+		  model.detect(video).then((predictions) => 
+		  {
+			if (predictions.length > 0) 
+			{				
+			  for(prediction in predictions)
+			  {
+				label = predictions[prediction[0]]["label"];
+				
+				if ( label == "face" && g_status == "")
+				{
+					setStatusText("Please raise your hand for adding the picture of your creation to the Screen ! ");
+					if(typeof mytimeout !== 'undefined' )
+						clearTimeout(mytimeout);
+					mytimeout = setTimeout(function()
+					{
+						if (g_status == "" )
+							setStatusText("");	
+					}, 2000);				
+				}
+				else if ( label == "open" && g_status == "waiting_for_approval")
+				{
+					browserFileStorage.save(returnCurDateStr(), g_last_blob ).then((() => 
+					{})).catch((error) => {console.error('Could not save the file!')});
+					
+					setStatusText("Your creation Photo Saved ! Thanks !");
+					g_status = "image_saved";
+					readImagesFromIndexDbIntoImgsBank();
+					setTimeout(function()
+					{
+						g_status = "";
+						setStatusText("");						
+					}, 4000);					
+				}
+				else if ( label == "open" && g_status == "")
+				{				
+					g_status = "found_waving";
+					startPictureCounter(5);
+				}				
+			  }
+			}
+		  });
+		}
+		handTrack.load(modelParams).then((lmodel) => {
+		  model = lmodel;
+		});
+		function startPictureCounter(counter)
+		{
+			setStatusText(counter);
+			
+			if(counter == 0)
+			{
+				convertVideo2picture();
+			}
+			else
+			{
+				setTimeout(function()
+				{
+					startPictureCounter(counter-1)
+				}, 1000);
+			}
+		}
+		function convertVideo2picture()
+		{
+			const mediaStreamTrack = video.srcObject.getVideoTracks()[0];
+			const imageCapture = new ImageCapture(mediaStreamTrack);
+			mainImg_div = document.getElementById("mainImg");
+			
+			imageCapture.takePhoto()
+				.then(blob => {
+								mainImg_div.src = URL.createObjectURL(blob);								
+								g_last_blob = blob ;								
+								mainImg_div.onload = () => { URL.revokeObjectURL(this.src); }
+								g_status = "waiting_for_approval";
+								setStatusText("Please raise your hand again for approving this image.");
+								waitForApproval(5);
+							  })
+				.catch(error => console.error('takePhoto() error:', error));
+		}
+		function waitForApproval(counter)
+		{			
+			if ( g_status !== "waiting_for_approval" )
+				return;
+				
+			setStatusText(".",true);			
+			if(counter == 0)
+			{				
+				setStatusText("Image not saved !");
+				setTimeout(function()
+				{
+					g_status = "";
+				}, 2000);
+			}
+			else
+			{
+				setTimeout(function()
+				{					
+					waitForApproval(counter-1)
+				}, 1000);
+			}
+		}		
+	</script>
+  </body>
+</html>
