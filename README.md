@@ -1,5 +1,6 @@
 # ScreenPhotosCapture
-Camera that take pictures by handwaves and upload them to Google Photos , presented on Screen.
+Present Photos on your Big Screen captured by your camera.
+
 Originally created for <a href="https://www.makelab.org.il/">MakeLab Israel</a>.
 
 <bold>Usage : </bold>
