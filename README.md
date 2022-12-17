@@ -7,5 +7,5 @@ Click on the status banner to view/delete all captured images.
 
 <bold>Usage : </bold>
 
-<a href="https://zacsadan.github.io/ScreenPhotosCapture.html">https://zacsadan.github.io/ScreenPhotosCapture.html</a>
+<a href="https://raw.githack.com/ZacSadan/ScreenPhotosCapture/main/ScreenPhotosCapture.html">https://raw.githack.com/ZacSadan/ScreenPhotosCapture/main/ScreenPhotosCapture.html</a>
 
