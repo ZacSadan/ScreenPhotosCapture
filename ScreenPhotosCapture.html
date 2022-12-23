@@ -62,7 +62,7 @@
 			"_" +
 			('0' + (today.getSeconds())).slice(-2) ;
 		}
-		function setStatusText(str)
+		function setStatusText(str,yellow)
 		{
 			bannerText = document.getElementById("bannerText");			
 			bannerText.innerHTML = str;	
@@ -70,6 +70,11 @@
 				bannerText.style.direction = "rtl";
 			else
 				bannerText.style.direction = "ltr";
+			
+			if ( yellow )
+				bannerText.parentElement.style.background = "#dfdd4c";
+			else
+				bannerText.parentElement.style.background = "#92b0d2";
 		}
 		function setCounterText(str)
 		{			
@@ -167,7 +172,7 @@
 		browserFileStorage.init('ScreenPhotos').then((status) => 
 		{
 			readImagesFromIndexDbIntoImgsBank();		
-			setStatusText(translate(g_lang, "DEFAULT_MSG"));			
+			setStatusText(translate(g_lang, "DEFAULT_MSG"),false);
 		}).catch((error) => {if(!error.supported) {}if(error.alreadyInit) {} if(error.dbError) {console.error(error.error)}});
 		
 		var video = document.getElementById('video');		
@@ -231,13 +236,13 @@
 				
 				if ( label == "face" && g_status == "")
 				{					
-					setStatusText(translate(g_lang, "RAISE_TO_START"));
+					setStatusText(translate(g_lang, "RAISE_TO_START"),true);
 					if(typeof mytimeout !== 'undefined' )
 						clearTimeout(mytimeout);
 					mytimeout = setTimeout(function()
 					{
 						if (g_status == "" )							
-							setStatusText(translate(g_lang, "DEFAULT_MSG"));
+							setStatusText(translate(g_lang, "DEFAULT_MSG"),false);
 					}, 2000);				
 				}
 				else if ( label == "open" && g_status == "waiting_for_approval")
@@ -245,14 +250,14 @@
 					browserFileStorage.save(returnCurDateStr(), g_last_blob ).then((() => 
 					{})).catch((error) => {console.error('Could not save the file!')});
 										
-					setStatusText(translate(g_lang, "IMAGE_SAVED"));
+					setStatusText(translate(g_lang, "IMAGE_SAVED"),true);
 					setCounterText("");
 					g_status = "image_saved";
 					readImagesFromIndexDbIntoImgsBank();
 					setTimeout(function()
 					{
 						g_status = "";
-						setStatusText(translate(g_lang, "DEFAULT_MSG"));
+						setStatusText(translate(g_lang, "DEFAULT_MSG"),false);
 					}, 4000);					
 				}
 				else if ( label == "open" && g_status == "")
@@ -269,7 +274,7 @@
 		});
 		function startPictureCounter(counter)
 		{			
-			setStatusText(translate(g_lang, "TAKE_PICTURE"));
+			setStatusText(translate(g_lang, "TAKE_PICTURE"),true);
 			setCounterText(counter);
 			
 			if(counter == 0)
@@ -297,7 +302,7 @@
 								g_last_blob = blob ;								
 								mainImg_div.onload = () => { URL.revokeObjectURL(this.src); }
 								g_status = "waiting_for_approval";								
-								setStatusText(translate(g_lang, "RAISE_TO_APPROVE"));
+								setStatusText(translate(g_lang, "RAISE_TO_APPROVE"),true);
 								waitForApproval(8);
 							  })
 				.catch(error => console.error('takePhoto() error:', error));
@@ -311,11 +316,12 @@
 			
 			if(counter == 0)
 			{								
-				setStatusText(translate(g_lang, "IMAGE_NOT_SAVED"));				
+				setStatusText(translate(g_lang, "IMAGE_NOT_SAVED"),true);				
 				setCounterText("");
 				setTimeout(function()
 				{
 					g_status = "";
+					setStatusText(translate(g_lang, "DEFAULT_MSG"),false);
 				}, 2000);
 			}
 			else
