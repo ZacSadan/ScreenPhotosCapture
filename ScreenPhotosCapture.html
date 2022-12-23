@@ -1,8 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
   <head>	
 	<style>
-		#bannerDiv { margin: 0px;  height: 5%; color:#d13e56;  background: #92b0d2;  position:absolute;  top:0px;  right:0px;  bottom:0px;   left:0px; text-align:center ; font-family:monospace ; font-size: 30px ; }
+		#bannerDiv { margin: 0px;  height: 5%; color:#d13e56;  background: #92b0d2;  position:absolute;  top:0px;  right:0px;  bottom:0px;   left:0px; text-align:center ; font-family:arial ; font-size: 30px ; font-weight : bold ; }
+		
+		#counterDiv { 	position: absolute;    top: 35%;    right: 47%; font-size: 300px ; color:#d13e56; font-family:monospace ; z-index:100 ;}
 		
 		#mainImgDiv {margin: 0px;  height: 95%;   background: white;  position:absolute;  top:5%;  right:0px;  bottom:0px;   left:0px;} 
 		
@@ -16,6 +18,36 @@
 	<script>
 		var g_status = "";
 		var g_last_blob ;
+		var g_lang = "Hebrew"; // get it from JS parameter
+		
+		function translate(language, phrase) {
+		const languageMap = {
+				English: {
+					"DEFAULT_MSG": "This is a screen that presents Makers works",
+					"RAISE_TO_START": "Please raise your hand for adding the picture of your creation to the Screen !",
+					"TAKE_PICTURE": "lower your hand and prepare to take a picture",
+					"RAISE_TO_APPROVE": "Please raise your hand again for approving this image.",
+					"IMAGE_SAVED": "Your creation Photo Saved ! Thanks !",
+					"IMAGE_NOT_SAVED": "Image not saved !"
+				},
+				Hebrew: {
+					"DEFAULT_MSG": "המסך מציג יצירות שנוצרו במעבדה",
+					"RAISE_TO_START": "אנא הרם את כף ידך על מנת להוסיף את תמונתך למסך",
+					"TAKE_PICTURE": "אנא הורד את כף ידך והתכונן לצילום",
+					"RAISE_TO_APPROVE": "אנא הרם את כף ידך לאישור התמונה",
+					"IMAGE_SAVED": "תמונתך נשמרה. תודה רבה !",
+					"IMAGE_NOT_SAVED": "התמונה לא נשמרה."
+				}			
+			}
+			try
+			{
+				return languageMap[language][phrase];
+			}
+			catch(e)
+			{
+				return languageMap["English"][phrase];
+			}
+		}
 
 		function returnCurDateStr()
 		{
@@ -30,14 +62,20 @@
 			"_" +
 			('0' + (today.getSeconds())).slice(-2) ;
 		}
-		function setStatusText(str,addition)
+		function setStatusText(str)
 		{
-			if ( addition )
-				document.getElementById("bannerText").innerHTML = 
-					document.getElementById("bannerText").innerHTML + str;
+			bannerText = document.getElementById("bannerText");			
+			bannerText.innerHTML = str;	
+			if ( g_lang == "Hebrew" ) 
+				bannerText.style.direction = "rtl";
 			else
-				document.getElementById("bannerText").innerHTML = str;			
+				bannerText.style.direction = "ltr";
 		}
+		function setCounterText(str)
+		{			
+			document.getElementById("counterText").innerHTML = str;					
+		}
+		
 		function readImagesFromIndexDbIntoImgsBank()
 		{			
 			imgsBankDiv = document.getElementById("imgsBankDiv");
@@ -110,7 +148,10 @@
   <body onload="rotateImagesOnScreen(0);">
     
 	<div id="bannerDiv" onclick="toggleImgsBank()" >
-		<b id="bannerText"></b>	
+		<div id="bannerText"></div>	
+	</div>
+	<div id="counterDiv"  >
+		<b id="counterText"></b>	
 	</div>
 	<div id="mainImgDiv" >
 		<img id="mainImg"> </img>	
@@ -125,9 +166,10 @@
 		
 		browserFileStorage.init('ScreenPhotos').then((status) => 
 		{
-			readImagesFromIndexDbIntoImgsBank();			
+			readImagesFromIndexDbIntoImgsBank();		
+			setStatusText(translate(g_lang, "DEFAULT_MSG"));			
 		}).catch((error) => {if(!error.supported) {}if(error.alreadyInit) {} if(error.dbError) {console.error(error.error)}});
-
+		
 		var video = document.getElementById('video');		
 		video.setAttribute('playsinline', '');
 		video.setAttribute('autoplay', '');
@@ -188,34 +230,35 @@
 				label = predictions[prediction[0]]["label"];
 				
 				if ( label == "face" && g_status == "")
-				{
-					setStatusText("Please raise your hand for adding the picture of your creation to the Screen ! ");
+				{					
+					setStatusText(translate(g_lang, "RAISE_TO_START"));
 					if(typeof mytimeout !== 'undefined' )
 						clearTimeout(mytimeout);
 					mytimeout = setTimeout(function()
 					{
-						if (g_status == "" )
-							setStatusText("");	
+						if (g_status == "" )							
+							setStatusText(translate(g_lang, "DEFAULT_MSG"));
 					}, 2000);				
 				}
 				else if ( label == "open" && g_status == "waiting_for_approval")
 				{
 					browserFileStorage.save(returnCurDateStr(), g_last_blob ).then((() => 
 					{})).catch((error) => {console.error('Could not save the file!')});
-					
-					setStatusText("Your creation Photo Saved ! Thanks !");
+										
+					setStatusText(translate(g_lang, "IMAGE_SAVED"));
+					setCounterText("");
 					g_status = "image_saved";
 					readImagesFromIndexDbIntoImgsBank();
 					setTimeout(function()
 					{
 						g_status = "";
-						setStatusText("");						
+						setStatusText(translate(g_lang, "DEFAULT_MSG"));
 					}, 4000);					
 				}
 				else if ( label == "open" && g_status == "")
 				{				
 					g_status = "found_waving";
-					startPictureCounter(5);
+					startPictureCounter(7);
 				}				
 			  }
 			}
@@ -225,11 +268,13 @@
 		  model = lmodel;
 		});
 		function startPictureCounter(counter)
-		{
-			setStatusText(counter);
+		{			
+			setStatusText(translate(g_lang, "TAKE_PICTURE"));
+			setCounterText(counter);
 			
 			if(counter == 0)
 			{
+				setCounterText("");
 				convertVideo2picture();
 			}
 			else
@@ -251,9 +296,9 @@
 								mainImg_div.src = URL.createObjectURL(blob);								
 								g_last_blob = blob ;								
 								mainImg_div.onload = () => { URL.revokeObjectURL(this.src); }
-								g_status = "waiting_for_approval";
-								setStatusText("Please raise your hand again for approving this image.");
-								waitForApproval(5);
+								g_status = "waiting_for_approval";								
+								setStatusText(translate(g_lang, "RAISE_TO_APPROVE"));
+								waitForApproval(8);
 							  })
 				.catch(error => console.error('takePhoto() error:', error));
 		}
@@ -261,11 +306,13 @@
 		{			
 			if ( g_status !== "waiting_for_approval" )
 				return;
-				
-			setStatusText(".",true);			
+
+			setCounterText(counter);
+			
 			if(counter == 0)
-			{				
-				setStatusText("Image not saved !");
+			{								
+				setStatusText(translate(g_lang, "IMAGE_NOT_SAVED"));				
+				setCounterText("");
 				setTimeout(function()
 				{
 					g_status = "";
