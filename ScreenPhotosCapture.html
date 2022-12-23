@@ -18,7 +18,9 @@
 	<script>
 		var g_status = "";
 		var g_last_blob ;
-		var g_lang = "Hebrew"; // get it from JS parameter
+				
+		let params = new URLSearchParams(location.search);
+		var g_lang = params.get('lang'); 
 		
 		function translate(language, phrase) {
 		const languageMap = {
