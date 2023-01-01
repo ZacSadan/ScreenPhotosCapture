@@ -1,7 +1,7 @@
 # ScreenPhotosCapture
 Present Photos on a Big Screen captured by your camera.
 
-Open your camera from the browser, picture Makers with their creation and present the pictures in a loop.
+Open your camera from the browser, takes Makers pictures with their creation and present the pictures in a loop.
 
 Originally created for <a href="https://www.makelab.org.il/">MakeLab Israel</a>.
 
