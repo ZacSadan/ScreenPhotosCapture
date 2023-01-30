@@ -23,3 +23,12 @@ https://raw.githack.com/ZacSadan/ScreenPhotosCapture/main/ScreenPhotosCapture.ht
 https://raw.githack.com/ZacSadan/ScreenPhotosCapture/main/ScreenPhotosCapture.html
 </a>
 
+
+# People Counter
+
+
+<a 
+href="
+https://raw.githack.com/ZacSadan/ScreenPhotosCapture/main/PeopleCounter.html">
+https://raw.githack.com/ZacSadan/ScreenPhotosCapture/main/PeopleCounter.html
+</a>
